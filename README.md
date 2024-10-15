@@ -21,6 +21,9 @@ e pelo LED azul na posição 2. Ao terminar estes dois processos, a luz Verde se
 
 Ainda a ser documentado.
 
-**Mudanças de Pinos:**
+**Mudanças de Pinos e configuração do EDsim:**
 Mudamos alguns Pinos do EDsim51, para o funcionamento do programa os pinos devem estar iguais:
 
+![image](https://github.com/user-attachments/assets/d2c178e5-d14d-43f2-9918-957b1f8d2674)
+
+Além disso, mudamos a cor do LED 2 para azul e LED 3 para verde.
