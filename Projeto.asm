@@ -1,31 +1,52 @@
 ;;--- Mapeamento de Hardware (8051) ---
     RS      equ     P3.0    ;Reg Select ligado em P3.0
     EN      equ     P3.1    ;Enable ligado em P3.1
-	
+	cafe equ p0.3
+	expresso equ p0.4
+	cappu equ p0.5
+	latte equ p0.6
+	luz_standby equ p1.0
+	luz_resistencia equ p1.1
+	luz_motor equ p1.2
+	luz_pronto equ p1.3
+	motor equ p3.6
+	direcao_motor equ p3.7
 
 org 0000h
 	LJMP START
 org 0003h
 int_ext0:
-	setb p1.0
-   ACALL modo_cafe 
-	CLR IE0
-	reti
-org 0013h
-int_ext1:
-	setb p1.0
-	ACALL modo_expresso
-	clr IE1
+	clr ie0
+	jb cafe, e_modo_cafe
+	jb expresso, e_modo_expresso
+	jb cappu, e_modo_cappu
+	jb latte, e_modo_latte
+	setb ie0
 	reti
 
+org 0020h
+e_modo_cafe:
+ljmp modo_cafe
+e_modo_expresso:
+ljmp modo_expresso
+e_modo_cappu:
+ljmp modo_cappu
+e_modo_latte:
+ljmp modo_latte
 org 0040h
 ; put data in ROM
 mensagem_1:
-	DB "1 para Cafe"
+	DB "3 para Expresso"
   DB 00h
 mensagem_2:
-  DB "2 para expresso"
+  DB "4 para Cafe"
   DB 00h
+mensagem_3:
+	DB "5 para Cappucino"
+	DB 00h
+mensagem_4:
+	DB "5 para Latte"
+	DB 00h
 pronto:
 DB "Cafe pronto"
 DB 00h
@@ -37,13 +58,15 @@ DB "Preparando..."
 DB 00h
 
 
-
 ;MAIN
 org 0100h
 START:
 
 main:
-setb ea
+	setb luz_resistencia
+	setb luz_motor
+	setb luz_pronto
+	setb ea
 	setb ex0
 	setb ex1
 	clr p1.0
@@ -56,11 +79,67 @@ setb ea
   ACALL posicionaCursor
 	MOV DPTR,#mensagem_2            
   ACALL escreveStringROM
+	call delay
+	ACALL clearDisplay
+	mov a, #00h
+	ACALL posicionaCursor
+	MOV DPTR,#mensagem_3            
+  ACALL escreveStringROM
+	MOV A, #40h
+  ACALL posicionaCursor
+	MOV DPTR,#mensagem_4            
+  ACALL escreveStringROM
 	ACALL clearDisplay
 	JMP main
 
+modo_cappu:
+	clr luz_resistencia
+	mov a, #70 ; esquenta leite
+	ACALL delay_  
+	setb luz_resistencia
+	cpl direcao_motor
+	clr luz_motor
+	mov a, #50 ; motor p/leite
+	acall delay_
+	setb luz_motor
+	cpl direcao_motor
+	acall faz_expresso  
+ 	ACALL clearDisplay  
+	cpl luz_motor 
+	MOV A, #00h
+	ACALL posicionaCursor
+	MOV DPTR,#pronto      
+	cpl luz_pronto    
+	ACALL escreveStringROM
+	mov a, #100
+	ACALL delay_
+	ljmp main
+modo_latte:
+	cpl luz_resistencia
+	mov a, #70 ; esquenta leite
+	ACALL delay_  
+	cpl luz_resistencia
+	cpl motor
+	cpl direcao_motor
+	mov a, #50 ; motor p/leite
+	acall delay_
+	cpl luz_motor
+	cpl motor
+	cpl direcao_motor
+	acall faz_expresso  
+ 	ACALL clearDisplay  
+	cpl p1.2 
+	MOV A, #00h
+	ACALL posicionaCursor
+	MOV DPTR,#pronto      
+	cpl p1.3    
+	ACALL escreveStringROM
+	mov a, #100
+	ACALL delay_
+	ljmp main
 modo_cafe:
-	cpl p1.1 ; luz resistencia
+	cpl luz_standby
+	cpl luz_resistencia
 	acall clearDisplay           
 	MOV A, #00h         
 	ACALL posicionaCursor
@@ -68,26 +147,37 @@ modo_cafe:
 	ACALL escreveStringROM
 	mov a, #70 ; esquenta agua
 	ACALL delay_  
-	cpl p1.1
+	cpl luz_resistencia
 	cpl p3.6
 	mov a, #50 ; motor filtro
-	cpl p1.2
+	cpl luz_motor
 	acall delay_
 	cpl P3.6   
  	ACALL clearDisplay  
-	cpl p1.2 
+	cpl luz_motor 
 	MOV A, #00h
 	ACALL posicionaCursor
 	MOV DPTR,#pronto      
-	cpl p1.3    
-
+	cpl luz_pronto    
 	ACALL escreveStringROM
-
 	mov a, #100
 	ACALL delay_
+	ljmp main
 
 modo_expresso:
-	cpl p1.1 ; luz resistencia
+	
+	acall faz_expresso      
+	ACALL clearDisplay
+	MOV A, #00h
+	ACALL posicionaCursor
+	MOV DPTR,#pronto_expr
+	cpl luz_pronto        
+	ACALL escreveStringROM
+	mov a, #100
+	ACALL delay_
+	ljmp main
+faz_expresso:
+	cpl luz_resistencia
 	acall clearDisplay           
 	MOV A, #00h         
 	ACALL posicionaCursor
@@ -95,31 +185,21 @@ modo_expresso:
 	ACALL escreveStringROM
 	mov a, #35 ; esquenta agua
 	ACALL delay_  
-	cpl p1.1
-	cpl p3.6
-	mov a, #25 ; motor filtro
-	cpl p1.2
+	cpl luz_resistencia
+	cpl motor
+	mov a, #25
+	cpl luz_motor
 	acall delay_
-	cpl P3.6   
- 	ACALL clearDisplay   
-	cpl p1.2
-	MOV A, #00h
-	ACALL posicionaCursor
-	MOV DPTR,#pronto_expr
-	cpl p1.3
-	          
-	ACALL escreveStringROM
-
-	mov a, #100
-	ACALL delay_
-
+	cpl motor 
+	cpl luz_motor
+	ret
 
 escreveStringROM:
   MOV R1, #00h
 	; Inicia a escrita da String no Display LCD
 loop:
   MOV A, R1
-	MOVC A,@A+DPTR 	 ;lê da memória de programa
+	MOVC A,@A+DPTR 	 ;lÃª da memÃ³ria de programa
 	JZ finish		; if A is 0, then end of data has been reached - jump out of loop
 	ACALL sendCharacter	; send data in A to LCD module
 	INC R1			; point to next piece of data
@@ -131,7 +211,7 @@ finish:
 
 ; inicializa o display
 lcd_init:
-	CLR RS		; clear RS - indica que instruções estão sendo enviadas ao módulo
+	CLR RS		; clear RS - indica que instruÃ§Ãµes estÃ£o sendo enviadas ao mÃ³dulo
 
 ; function set	
 	CLR P2.7		; |
@@ -143,17 +223,17 @@ lcd_init:
 	CLR EN		; | borda negativa no E
 
 	CALL delay		; aguarda o Busy Flag limpar
-					; função set enviada pela primeira vez - diz ao módulo para entrar no modo de 4 bits
+					; funÃ§Ã£o set enviada pela primeira vez - diz ao mÃ³dulo para entrar no modo de 4 bits
 
 	SETB EN		; |
 	CLR EN		; | borda negativa no E
-					; mesma função set high nibble enviada novamente
+					; mesma funÃ§Ã£o set high nibble enviada novamente
 
 	SETB P2.7		; low nibble set (apenas P2.7 mudou)
 
 	SETB EN		; |
 	CLR EN		; | borda negativa no E
-				; função set low nibble enviada
+				; funÃ§Ã£o set low nibble enviada
 	CALL delay		; aguarda o Busy Flag limpar
 
 
@@ -197,7 +277,7 @@ lcd_init:
 
 
 sendCharacter:
-	SETB RS  		; setb RS - indica que dados estão sendo enviados ao módulo
+	SETB RS  		; setb RS - indica que dados estÃ£o sendo enviados ao mÃ³dulo
 	MOV C, ACC.7		; |
 	MOV P2.7, C			; |
 	MOV C, ACC.6		; |
@@ -294,5 +374,3 @@ delay_loop_modular:
     CALL delay
     DJNZ R6, delay_loop_modular
     RET
-
-
