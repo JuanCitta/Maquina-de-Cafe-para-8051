@@ -14,41 +14,51 @@
 
 org 0000h
 	LJMP START
+
+; Verifica escolha do usuario
 org 0003h
 int_ext0:
 	clr ie0
-	jb cafe, e_modo_cafe
-	jb expresso, e_modo_expresso
-	jb cappu, e_modo_cappu
-	jb latte, e_modo_latte
+	jnb latte, e_modo_latte
+	jnb cappu, e_modo_cappu
+	jnb cafe, e_modo_cafe
+	jnb expresso, e_modo_expresso
 	setb ie0
 	reti
 
+;
 org 0020h
 e_modo_cafe:
-ljmp modo_cafe
+	ljmp modo_cafe
 e_modo_expresso:
-ljmp modo_expresso
+	ljmp modo_expresso
 e_modo_cappu:
-ljmp modo_cappu
+	ljmp modo_cappu
 e_modo_latte:
-ljmp modo_latte
+	ljmp modo_latte
+
+; Mensagens 
 org 0040h
-; put data in ROM
 mensagem_1:
-	DB "3 para Expresso"
-  DB 00h
+DB "3 para Cafe"
+DB 00h
 mensagem_2:
-  DB "4 para Cafe"
-  DB 00h
+DB "4 para Expresso"
+DB 00h
 mensagem_3:
-	DB "5 para Cappucino"
-	DB 00h
+DB "5 para Cappucino"
+DB 00h
 mensagem_4:
-	DB "5 para Latte"
-	DB 00h
+DB "6 para Latte"
+DB 00h
 pronto:
 DB "Cafe pronto"
+DB 00h
+pronto_cappu:
+DB "Cappu pronto"
+DB 00h
+pronto_latte:
+DB "Latte pronto"
 DB 00h
 pronto_expr:
 DB "Expresso pronto"
@@ -56,12 +66,14 @@ DB 00h
 preparando:
 DB "Preparando..."
 DB 00h
-
+; Fim de Mensagens
 
 ;MAIN
 org 0100h
 START:
 
+; loop que fica imprimindo
+; as opcoes ate o usuario escolher
 main:
 	setb luz_resistencia
 	setb luz_motor
@@ -92,6 +104,50 @@ main:
 	ACALL clearDisplay
 	JMP main
 
+; se foi escolhido 3
+modo_cafe:
+	cpl luz_standby
+	cpl luz_resistencia
+	acall clearDisplay           
+	MOV A, #00h         
+	ACALL posicionaCursor
+	MOV DPTR, #PREPARANDO
+	ACALL escreveStringROM	
+	mov a, #70 ; esquenta agua
+	ACALL delay_  
+	cpl luz_resistencia
+	cpl p3.6
+	mov a, #50 ; motor filtro
+	cpl luz_motor
+	acall delay_
+	cpl P3.6   
+	ACALL clearDisplay  
+	cpl luz_motor 
+	MOV A, #00h
+	ACALL posicionaCursor
+	MOV DPTR,#pronto      
+	cpl luz_pronto    
+	ACALL escreveStringROM
+	mov a, #100
+	ACALL delay_
+	ljmp main
+; fim 3
+
+; se foi escolhido 4
+modo_expresso:
+	acall faz_expresso      
+	ACALL clearDisplay
+	MOV A, #00h
+	ACALL posicionaCursor
+	MOV DPTR,#pronto_expr
+	cpl luz_pronto        
+	ACALL escreveStringROM
+	mov a, #100
+	ACALL delay_
+	ljmp main
+; fim 4
+
+; se foi escolhido 5
 modo_cappu:
 	clr luz_resistencia
 	mov a, #70 ; esquenta leite
@@ -108,12 +164,15 @@ modo_cappu:
 	cpl luz_motor 
 	MOV A, #00h
 	ACALL posicionaCursor
-	MOV DPTR,#pronto      
+	MOV DPTR,#pronto_cappu      
 	cpl luz_pronto    
 	ACALL escreveStringROM
 	mov a, #100
 	ACALL delay_
 	ljmp main
+; fim 5
+
+; se foi escolhido 6
 modo_latte:
 	cpl luz_resistencia
 	mov a, #70 ; esquenta leite
@@ -131,51 +190,17 @@ modo_latte:
 	cpl p1.2 
 	MOV A, #00h
 	ACALL posicionaCursor
-	MOV DPTR,#pronto      
+	MOV DPTR,#pronto_latte    
 	cpl p1.3    
 	ACALL escreveStringROM
 	mov a, #100
 	ACALL delay_
 	ljmp main
-modo_cafe:
-	cpl luz_standby
-	cpl luz_resistencia
-	acall clearDisplay           
-	MOV A, #00h         
-	ACALL posicionaCursor
-	MOV DPTR, #PREPARANDO
-	ACALL escreveStringROM
-	mov a, #70 ; esquenta agua
-	ACALL delay_  
-	cpl luz_resistencia
-	cpl p3.6
-	mov a, #50 ; motor filtro
-	cpl luz_motor
-	acall delay_
-	cpl P3.6   
- 	ACALL clearDisplay  
-	cpl luz_motor 
-	MOV A, #00h
-	ACALL posicionaCursor
-	MOV DPTR,#pronto      
-	cpl luz_pronto    
-	ACALL escreveStringROM
-	mov a, #100
-	ACALL delay_
-	ljmp main
+; fim 6
 
-modo_expresso:
-	
-	acall faz_expresso      
-	ACALL clearDisplay
-	MOV A, #00h
-	ACALL posicionaCursor
-	MOV DPTR,#pronto_expr
-	cpl luz_pronto        
-	ACALL escreveStringROM
-	mov a, #100
-	ACALL delay_
-	ljmp main
+; funcao para fazer expresso
+; pois latte, cappu e expresso
+; usam expresso
 faz_expresso:
 	cpl luz_resistencia
 	acall clearDisplay           
@@ -194,12 +219,13 @@ faz_expresso:
 	cpl luz_motor
 	ret
 
+
 escreveStringROM:
   MOV R1, #00h
 	; Inicia a escrita da String no Display LCD
 loop:
   MOV A, R1
-	MOVC A,@A+DPTR 	 ;lê da memória de programa
+	MOVC A,@A+DPTR 	 ;lÃª da memÃ³ria de programa
 	JZ finish		; if A is 0, then end of data has been reached - jump out of loop
 	ACALL sendCharacter	; send data in A to LCD module
 	INC R1			; point to next piece of data
@@ -211,7 +237,7 @@ finish:
 
 ; inicializa o display
 lcd_init:
-	CLR RS		; clear RS - indica que instruções estão sendo enviadas ao módulo
+	CLR RS		; clear RS - indica que instruÃ§Ãµes estÃ£o sendo enviadas ao mÃ³dulo
 
 ; function set	
 	CLR P2.7		; |
@@ -223,17 +249,17 @@ lcd_init:
 	CLR EN		; | borda negativa no E
 
 	CALL delay		; aguarda o Busy Flag limpar
-					; função set enviada pela primeira vez - diz ao módulo para entrar no modo de 4 bits
+					; funÃ§Ã£o set enviada pela primeira vez - diz ao mÃ³dulo para entrar no modo de 4 bits
 
 	SETB EN		; |
 	CLR EN		; | borda negativa no E
-					; mesma função set high nibble enviada novamente
+					; mesma funÃ§Ã£o set high nibble enviada novamente
 
 	SETB P2.7		; low nibble set (apenas P2.7 mudou)
 
 	SETB EN		; |
 	CLR EN		; | borda negativa no E
-				; função set low nibble enviada
+				; funÃ§Ã£o set low nibble enviada
 	CALL delay		; aguarda o Busy Flag limpar
 
 
@@ -277,7 +303,7 @@ lcd_init:
 
 
 sendCharacter:
-	SETB RS  		; setb RS - indica que dados estão sendo enviados ao módulo
+	SETB RS  		; setb RS - indica que dados estÃ£o sendo enviados ao mÃ³dulo
 	MOV C, ACC.7		; |
 	MOV P2.7, C			; |
 	MOV C, ACC.6		; |
