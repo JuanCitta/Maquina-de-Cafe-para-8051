@@ -19,6 +19,7 @@ org 0000h
 org 0003h
 int_ext0:
 	clr ie0
+	call delay
 	jnb latte, e_modo_latte
 	jnb cappu, e_modo_cappu
 	jnb cafe, e_modo_cafe
@@ -130,7 +131,8 @@ modo_cafe:
 	ACALL escreveStringROM
 	mov a, #100
 	ACALL delay_
-	ljmp main
+	setb ie0
+	reti
 ; fim 3
 
 ; se foi escolhido 4
