@@ -1,42 +1,19 @@
 ;;--- Mapeamento de Hardware (8051) ---
     RS      equ     P3.0    ;Reg Select ligado em P3.0
     EN      equ     P3.1    ;Enable ligado em P3.1
-	cafe equ p0.3
-	expresso equ p0.4
-	cappu equ p0.5
-	latte equ p0.6
-	luz_standby equ p1.0
-	luz_resistencia equ p1.1
-	luz_motor equ p1.2
-	luz_pronto equ p1.3
-	motor equ p3.6
-	direcao_motor equ p3.7
+	cafe equ P0.3
+	expresso equ P0.4
+	cappu equ P0.5
+	latte equ P0.6
+	luz_standby equ P1.0
+	luz_resistencia equ P1.1
+	luz_motor equ P1.2
+	luz_pronto equ P1.3
+	motor equ P3.6
+	direcao_motor equ P3.7
 
 org 0000h
 	LJMP START
-
-; Verifica escolha do usuario
-org 0003h
-int_ext0:
-	clr ie0
-	call delay
-	jnb latte, e_modo_latte
-	jnb cappu, e_modo_cappu
-	jnb cafe, e_modo_cafe
-	jnb expresso, e_modo_expresso
-	setb ie0
-	reti
-
-;
-org 0020h
-e_modo_cafe:
-	ljmp modo_cafe
-e_modo_expresso:
-	ljmp modo_expresso
-e_modo_cappu:
-	ljmp modo_cappu
-e_modo_latte:
-	ljmp modo_latte
 
 ; Mensagens 
 org 0040h
@@ -69,174 +46,196 @@ DB "Preparando..."
 DB 00h
 ; Fim de Mensagens
 
-;MAIN
+; MAIN
 org 0100h
 START:
 
-; loop que fica imprimindo
-; as opcoes ate o usuario escolher
+; loop que imprime
+; as opções que o usuário
+; pode escolher
 main:
-	setb luz_resistencia
-	setb luz_motor
-	setb luz_pronto
-	setb ea
-	setb ex0
-	setb ex1
-	clr p1.0
-	ACALL lcd_init
-	MOV A, #00h
+	setb luz_resistencia ; da set no bit da luz em 1 (apagado)
+	setb luz_motor ; da set no bit da luz em 1 (apagado)
+	setb luz_pronto ; da set no bit da luz em 1 (apagado)
+	setb ea  ; habilita interrupções externas
+	clr p1.0 ; coloca bit da luz em 0 (ligado)
+	ACALL lcd_init ; inicializa o LCD
+	mov A, #00h
 	ACALL posicionaCursor
-	MOV DPTR,#mensagem_1          
-	ACALL escreveStringROM
-	MOV A, #40h
-  ACALL posicionaCursor
-	MOV DPTR,#mensagem_2            
-  ACALL escreveStringROM
-	call delay
+	mov DPTR,#mensagem_1          
+	ACALL escreveStringROM ; Mostra opção cafe
+	mov A, #40h
+  	ACALL posicionaCursor
+	mov DPTR,#mensagem_2            
+  	ACALL escreveStringROM ; Mostra opção expresso
+	ACALL delay
 	ACALL clearDisplay
-	mov a, #00h
+	mov A, #00h
 	ACALL posicionaCursor
-	MOV DPTR,#mensagem_3            
-  ACALL escreveStringROM
-	MOV A, #40h
-  ACALL posicionaCursor
-	MOV DPTR,#mensagem_4            
-  ACALL escreveStringROM
-	ACALL clearDisplay
-	JMP main
+	mov DPTR,#mensagem_3            
+	ACALL escreveStringROM ; Mostra opção cappuccino
+	mov A, #40h
+	ACALL posicionaCursor
+	mov DPTR,#mensagem_4            
+	ACALL escreveStringROM ; Mostra opção latte
 
-; se foi escolhido 3
+; Loop para verificar a escolha do usuário
+verifica:
+	jnb latte, e_modo_latte
+	jnb cappu, e_modo_cappu
+	jnb cafe, e_modo_cafe
+	jnb expresso, e_modo_expresso
+	JMP verifica ; Verifica novamente
+
+e_modo_cafe:
+	ljmp modo_cafe
+e_modo_expresso:
+	ljmp modo_expresso
+e_modo_cappu:
+	ljmp modo_cappu
+e_modo_latte:
+	ljmp modo_latte
+
+; Se foi escolhido 3
 modo_cafe:
-	cpl luz_standby
-	cpl luz_resistencia
-	acall clearDisplay           
-	MOV A, #00h         
+	setb luz_standby  ; desliga luz p1.0
+	cpl luz_resistencia ; liga luz p1.1
+	ACALL clearDisplay ; limpa lcd          
+	mov A, #00h ; valor onde cursor deve ser colocado        
 	ACALL posicionaCursor
-	MOV DPTR, #PREPARANDO
+	mov DPTR, #PREPARANDO ;
 	ACALL escreveStringROM	
 	mov a, #70 ; esquenta agua
 	ACALL delay_  
-	cpl luz_resistencia
-	cpl p3.6
+	cpl luz_resistencia ; desliga luz p1.1
+	cpl motor ; liga o motor
 	mov a, #50 ; motor filtro
-	cpl luz_motor
-	acall delay_
-	cpl P3.6   
+	cpl luz_motor ; liga p1.2
+	ACALL delay_
+	cpl motor ; desliga o motor  
 	ACALL clearDisplay  
-	cpl luz_motor 
-	MOV A, #00h
+	cpl luz_motor ; desliga p1.2
+	mov A, #00h
 	ACALL posicionaCursor
-	MOV DPTR,#pronto      
-	cpl luz_pronto    
+	mov DPTR,#pronto      
+	cpl luz_pronto ; liga p1.3   
 	ACALL escreveStringROM
 	mov a, #100
 	ACALL delay_
-	setb ie0
-	reti
+	cpl luz_pronto ; desliga p1.3
+	ACALL clearDisplay
+	LJMP START
+	
 ; fim 3
 
-; se foi escolhido 4
+; Se foi escolhido 4
 modo_expresso:
-	acall faz_expresso      
+	setb luz_standby ; desliga luz p1.0
+	ACALL faz_expresso ; chama a função de fazer expresso   
 	ACALL clearDisplay
-	MOV A, #00h
+	mov A, #00h
 	ACALL posicionaCursor
-	MOV DPTR,#pronto_expr
-	cpl luz_pronto        
+	mov DPTR,#pronto_expr ; escolhe qual mensagem deve ser mostrada
+	cpl luz_pronto ; liga a luz p1.3       
 	ACALL escreveStringROM
 	mov a, #100
 	ACALL delay_
-	ljmp main
+	cpl luz_pronto ; desliga a luz p1.3
+	ACALL clearDisplay
+	LJMP START
 ; fim 4
 
-; se foi escolhido 5
+; Se foi escolhido 5
 modo_cappu:
-	clr luz_resistencia
+	setb luz_standby  ; desliga luz p1.0
+	cpl luz_resistencia ; liga luz p1.1
 	mov a, #70 ; esquenta leite
 	ACALL delay_  
-	setb luz_resistencia
-	cpl direcao_motor
-	clr luz_motor
+	cpl luz_resistencia ; desliga luz p1.1
+	cpl direcao_motor ; faz o motor rodar no sentido anti-horário
+	clr luz_motor ; liga luz p1.2
 	mov a, #50 ; motor p/leite
-	acall delay_
-	setb luz_motor
-	cpl direcao_motor
-	acall faz_expresso  
+	ACALL delay_
+	cpl luz_motor ; desliga luz p1.2
+	cpl direcao_motor ; retorna o motor pro sentido normal
+	ACALL faz_expresso  
  	ACALL clearDisplay  
-	cpl luz_motor 
-	MOV A, #00h
+	mov A, #00h
 	ACALL posicionaCursor
-	MOV DPTR,#pronto_cappu      
-	cpl luz_pronto    
+	mov DPTR,#pronto_cappu      
+	cpl luz_pronto ; liga p1.3   
 	ACALL escreveStringROM
 	mov a, #100
 	ACALL delay_
-	ljmp main
+	cpl luz_pronto ; desliga a luz p1.3
+	ACALL clearDisplay
+	LJMP START
 ; fim 5
 
-; se foi escolhido 6
+; Se foi escolhido 6
 modo_latte:
-	cpl luz_resistencia
+	setb luz_standby  ; desliga luz p1.0
+	clr luz_resistencia ; liga luz p1.1
 	mov a, #70 ; esquenta leite
 	ACALL delay_  
-	cpl luz_resistencia
-	cpl motor
-	cpl direcao_motor
+	setb luz_resistencia ; desliga luz p1.1
+	cpl motor ; liga motor
+	cpl direcao_motor ; faz o motor rodar no sentido anti-horário
 	mov a, #50 ; motor p/leite
-	acall delay_
-	cpl luz_motor
-	cpl motor
-	cpl direcao_motor
-	acall faz_expresso  
+	ACALL delay_
+	cpl luz_motor ; liga luz p1.2
+	cpl motor ; desliga motor
+	cpl direcao_motor ; retorna o motor pro sentido normal
+	cpl luz_motor ; desliga luz p1.2
+	ACALL faz_expresso  
  	ACALL clearDisplay  
-	cpl p1.2 
-	MOV A, #00h
+	mov A, #00h
 	ACALL posicionaCursor
 	MOV DPTR,#pronto_latte    
-	cpl p1.3    
+	cpl luz_pronto ; liga p1.3   
 	ACALL escreveStringROM
 	mov a, #100
 	ACALL delay_
-	ljmp main
+	cpl luz_pronto ; desliga a luz p1.3
+	ACALL clearDisplay
+	LJMP START
 ; fim 6
 
-; funcao para fazer expresso
+; Função para fazer expresso
 ; pois latte, cappu e expresso
 ; usam expresso
 faz_expresso:
-	cpl luz_resistencia
-	acall clearDisplay           
-	MOV A, #00h         
+	clr luz_resistencia ; liga a luz p1.1
+	ACALL clearDisplay           
+	mov A, #00h         
 	ACALL posicionaCursor
-	MOV DPTR, #PREPARANDO
+	mov DPTR, #PREPARANDO
 	ACALL escreveStringROM
-	mov a, #35 ; esquenta agua
+	mov a, #35 ; esquenta água
 	ACALL delay_  
-	cpl luz_resistencia
-	cpl motor
+	setb luz_resistencia ; desliga a luz p1.1
+	cpl motor ; liga motor
 	mov a, #25
-	cpl luz_motor
-	acall delay_
-	cpl motor 
-	cpl luz_motor
+	clr luz_motor ; liga luz p1.2
+	ACALL delay_
+	cpl motor ; desliga motor
+	setb luz_motor ; desliga luz p1.2
 	ret
 
-
 escreveStringROM:
-  MOV R1, #00h
+	MOV R1, #00h
 	; Inicia a escrita da String no Display LCD
 loop:
-  MOV A, R1
-	MOVC A,@A+DPTR 	 ;lÃª da memÃ³ria de programa
+	MOV A, R1
+	MOVC A,@A+DPTR 	 ; lê da memória de programa
 	JZ finish		; if A is 0, then end of data has been reached - jump out of loop
 	ACALL sendCharacter	; send data in A to LCD module
 	INC R1			; point to next piece of data
-   MOV A, R1
+	MOV A, R1
 	JMP loop		; repeat
 finish:
 	RET
 	
-
 ; inicializa o display
 lcd_init:
 	CLR RS		; clear RS - indica que instruÃ§Ãµes estÃ£o sendo enviadas ao mÃ³dulo
@@ -402,3 +401,4 @@ delay_loop_modular:
     CALL delay
     DJNZ R6, delay_loop_modular
     RET
+
