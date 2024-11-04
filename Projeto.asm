@@ -44,6 +44,9 @@ DB 00h
 preparando:
 DB "Preparando..."
 DB 00h
+esquenta:
+DB "Esquentando"
+DB 00h
 ; Fim de Mensagens
 
 ; MAIN
@@ -148,12 +151,17 @@ modo_expresso:
 ; Se foi escolhido 5
 modo_cappu:
 	setb luz_standby  ; desliga luz p1.0
-	cpl luz_resistencia ; liga luz p1.1
-	mov a, #70 ; esquenta leite
-	ACALL delay_  
+	clr luz_resistencia ; liga luz p1.1
+	ACALL clearDisplay  
+	mov A, #00h
+	ACALL posicionaCursor
+	MOV DPTR,#esquenta ; escolhe da lista de mensagens
+	ACALL escreveStringROM
 	cpl luz_resistencia ; desliga luz p1.1
 	cpl direcao_motor ; faz o motor rodar no sentido anti-horário
 	clr luz_motor ; liga luz p1.2
+	mov a, #50 ; esquenta leite
+	ACALL delay_  
 	mov a, #50 ; motor p/leite
 	ACALL delay_
 	cpl luz_motor ; desliga luz p1.2
@@ -176,22 +184,25 @@ modo_cappu:
 modo_latte:
 	setb luz_standby  ; desliga luz p1.0
 	clr luz_resistencia ; liga luz p1.1
+	ACALL clearDisplay  
+	mov A, #00h
+	ACALL posicionaCursor
+	MOV DPTR,#esquenta ; escolhe da lista de mensagens
+	ACALL escreveStringROM
+	cpl luz_resistencia ; desliga luz p1.1
+	cpl direcao_motor ; faz o motor rodar no sentido anti-horário
+	clr luz_motor ; liga luz p1.2
 	mov a, #70 ; esquenta leite
 	ACALL delay_  
-	setb luz_resistencia ; desliga luz p1.1
-	cpl motor ; liga motor
-	cpl direcao_motor ; faz o motor rodar no sentido anti-horário
 	mov a, #50 ; motor p/leite
 	ACALL delay_
-	cpl luz_motor ; liga luz p1.2
-	cpl motor ; desliga motor
-	cpl direcao_motor ; retorna o motor pro sentido normal
 	cpl luz_motor ; desliga luz p1.2
+	cpl direcao_motor ; retorna o motor pro sentido normal
 	ACALL faz_expresso  
  	ACALL clearDisplay  
 	mov A, #00h
 	ACALL posicionaCursor
-	MOV DPTR,#pronto_latte    
+	mov DPTR,#pronto_latte   
 	cpl luz_pronto ; liga p1.3   
 	ACALL escreveStringROM
 	mov a, #100
