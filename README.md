@@ -8,6 +8,9 @@ Input de 2 botões
 Display LCD
 Motor do edsim
 
+**Fluxograma:**
+![image](https://github.com/user-attachments/assets/0c321c43-abc6-4c3a-b114-c6d490ad68dd)
+
 
 **Funcionamento:**
 Ao ligar a máquina, será aceso o LED vermelho da posição 0 e também será mostrado uma mensagem das opções de café que podem ser escolhidas.
