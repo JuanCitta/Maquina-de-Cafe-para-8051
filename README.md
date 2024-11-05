@@ -3,10 +3,14 @@
 Projeto para Arquitetura de Computadores - CE4411
 
 **Materiais:**
-4 LEDs
-Input de 2 botões
-Display LCD
-Motor do edsim
+
+	-4 LEDs
+ 
+	-Input de 2 botões
+ 
+	-Display LCD
+ 
+	-Motor do edsim
 
 **Fluxograma:**
 ![image](https://github.com/user-attachments/assets/0c321c43-abc6-4c3a-b114-c6d490ad68dd)
@@ -15,10 +19,11 @@ Motor do edsim
 **Funcionamento:**
 Ao ligar a máquina, será aceso o LED vermelho da posição 0 e também será mostrado uma mensagem das opções de café que podem ser escolhidas.
 As mensagems são: 
-- "3 para cafe"
-- "4 para Expresso"
-- "5 para Cappucino"
-- "6 para Latte"
+
+	- "3 para cafe"
+	- "4 para Expresso"
+	- "5 para Cappucino"
+	- "6 para Latte"
 
 ![image](https://github.com/user-attachments/assets/f39d947c-5366-4612-b8c6-73a9fed3fda9)
 
