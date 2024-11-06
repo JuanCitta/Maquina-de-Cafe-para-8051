@@ -6,7 +6,7 @@ Projeto para Arquitetura de Computadores - CE4411
 
 	-4 LEDs
  
-	-Input de 2 botões
+	-Input de 4 botões
  
 	-Display LCD
  
@@ -44,6 +44,12 @@ Após a água terminar de passar pelo filtro. O LED verde da posição 3 será l
 
 ![image](https://github.com/user-attachments/assets/9e0de189-0e0d-4138-ab39-2be1f2846704)
 
+
+**Dificuldades**
+Tivemos dificuldade no início do projeto, pois tentamos usar duas interrupções que levavam as rotinas, que fariam o processo do café.
+Mas ao querermos adicionar novos tipos de café, tentamos adaptar o projeto e ter apenas uma interrupção, que confirmaria a seleção do usuário.
+Isso gerou diferentes problemas, o mais notável sendo o retorno da interrupção. O programa apenas regsitrava a primeira seleção e após vários testes, decidimos 
+tirar a interrupção e manter o loop de verificação de input do usuário que já existia dentro da interrupção.
 
 **Mudanças de Pinos e configuração do EDsim:**
 Mudamos alguns Pinos do EDsim51, para o funcionamento do programa os pinos devem estar iguais:
